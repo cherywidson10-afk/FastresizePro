@@ -1,0 +1,1606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FastResize Pro | Modern Media Resizer</title>
+    <meta name="description" content="Free online image, video, and document resizer. Resize videos up to 1GB, batch processing, social media presets, and more.">
+    <meta name="keywords" content="image resizer, video resizer, resize image online, resize video online, photo resizer free, video size changer, compress image, compress video">
+    
+    <!-- Schema.org markup for Google -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "FastResize Pro",
+      "url": "https://fastresizepro.com",
+      "applicationCategory": "MultimediaApplication",
+      "operatingSystem": "Any",
+      "description": "Professional online tool to resize images, videos, and documents",
+      "offers": {
+        "@type": "AggregateOffer",
+        "priceCurrency": "USD",
+        "lowPrice": "0",
+        "highPrice": "49"
+      }
+    }
+    </script>
+    
+    <!-- FAQ Schema -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "Is this image and video resizer free?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes, you can resize images and videos online for free without creating an account with our Standard plan. Premium features require a subscription."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Do you store uploaded files?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "No. All files are processed locally in your browser and are never uploaded to a server for Standard users. Premium users can optionally save settings in the cloud."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Can I resize multiple files at once?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes, our tool supports batch processing and ZIP download, available in Premium and Business plans."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Does resizing reduce quality?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Our smart compression keeps the best possible quality while reducing file size. You can adjust quality settings manually."
+          }
+        }
+      ]
+    }
+    </script>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚡</text></svg>">
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- External Libraries -->
+    <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.12.4/dist/ffmpeg.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    
+    <style>
+        :root {
+            --neon-red: #ff003c;
+            --neon-red-glow: rgba(255, 0, 60, 0.7);
+            --neon-red-light: #ff3366;
+            --dark-bg: #0a0a0a;
+            --dark-card: #111111;
+            --dark-border: #222222;
+            --text-light: #f0f0f0;
+            --text-gray: #aaaaaa;
+            --success: #00ff88;
+            --warning: #ffaa00;
+            --premium-gold: #ffd700;
+            --business-purple: #9d4edd;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+        
+        body {
+            background-color: var(--dark-bg);
+            color: var(--text-light);
+            line-height: 1.6;
+            overflow-x: hidden;
+            position: relative;
+        }
+        
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 20% 50%, rgba(255, 0, 60, 0.05) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 20%, rgba(255, 0, 60, 0.03) 0%, transparent 50%);
+            z-index: -1;
+            pointer-events: none;
+        }
+        
+        /* Header & Navigation */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem 5%;
+            background-color: rgba(10, 10, 10, 0.95);
+            backdrop-filter: blur(10px);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            border-bottom: 1px solid var(--dark-border);
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: var(--neon-red);
+            text-shadow: 0 0 10px var(--neon-red-glow);
+        }
+        
+        .logo span {
+            margin-left: 0.5rem;
+        }
+        
+        nav ul {
+            display: flex;
+            list-style: none;
+        }
+        
+        nav ul li {
+            margin-left: 2rem;
+        }
+        
+        nav ul li a {
+            color: var(--text-light);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s;
+            position: relative;
+        }
+        
+        nav ul li a:hover {
+            color: var(--neon-red);
+        }
+        
+        nav ul li a::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: -5px;
+            left: 0;
+            background-color: var(--neon-red);
+            transition: width 0.3s;
+        }
+        
+        nav ul li a:hover::after {
+            width: 100%;
+        }
+        
+        .auth-buttons {
+            display: flex;
+            gap: 1rem;
+        }
+        
+        .btn {
+            padding: 0.7rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: none;
+            font-size: 0.95rem;
+        }
+        
+        .btn-outline {
+            background: transparent;
+            border: 2px solid var(--neon-red);
+            color: var(--neon-red);
+        }
+        
+        .btn-outline:hover {
+            background-color: var(--neon-red);
+            color: var(--dark-bg);
+            box-shadow: 0 0 15px var(--neon-red-glow);
+        }
+        
+        .btn-primary {
+            background-color: var(--neon-red);
+            color: white;
+            box-shadow: 0 0 10px var(--neon-red-glow);
+        }
+        
+        .btn-primary:hover {
+            background-color: var(--neon-red-light);
+            box-shadow: 0 0 20px var(--neon-red-glow);
+            transform: translateY(-2px);
+        }
+        
+        /* Main Content */
+        main {
+            padding: 2rem 5%;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        /* Hero Section */
+        .hero {
+            text-align: center;
+            padding: 4rem 0;
+            margin-bottom: 3rem;
+        }
+        
+        .hero h1 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+            background: linear-gradient(90deg, #fff, var(--neon-red));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            line-height: 1.2;
+        }
+        
+        .hero p {
+            font-size: 1.2rem;
+            color: var(--text-gray);
+            max-width: 700px;
+            margin: 0 auto 2rem;
+        }
+        
+        /* Upload Section */
+        .upload-section {
+            background-color: var(--dark-card);
+            border-radius: 16px;
+            padding: 2.5rem;
+            margin-bottom: 3rem;
+            border: 1px solid var(--dark-border);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+        
+        .upload-area {
+            border: 3px dashed var(--neon-red);
+            border-radius: 12px;
+            padding: 3rem 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 2rem;
+        }
+        
+        .upload-area:hover {
+            background-color: rgba(255, 0, 60, 0.05);
+            box-shadow: 0 0 30px var(--neon-red-glow);
+        }
+        
+        .upload-area i {
+            font-size: 4rem;
+            color: var(--neon-red);
+            margin-bottom: 1rem;
+            display: block;
+        }
+        
+        .upload-area h3 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .upload-area p {
+            color: var(--text-gray);
+            margin-bottom: 1.5rem;
+        }
+        
+        .file-types {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .file-type {
+            background-color: rgba(255, 255, 255, 0.05);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+        
+        /* Controls Section */
+        .controls-section {
+            background-color: var(--dark-card);
+            border-radius: 16px;
+            padding: 2.5rem;
+            margin-bottom: 3rem;
+            border: 1px solid var(--dark-border);
+        }
+        
+        .controls-section h2 {
+            font-size: 1.8rem;
+            margin-bottom: 1.5rem;
+            color: var(--neon-red);
+        }
+        
+        .control-group {
+            margin-bottom: 2rem;
+        }
+        
+        .control-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+        }
+        
+        .control-label span {
+            font-weight: 600;
+        }
+        
+        .control-value {
+            color: var(--neon-red);
+            font-weight: 700;
+        }
+        
+        .slider {
+            width: 100%;
+            height: 8px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: linear-gradient(to right, var(--neon-red), var(--neon-red-light));
+            border-radius: 4px;
+            outline: none;
+        }
+        
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: white;
+            cursor: pointer;
+            box-shadow: 0 0 10px var(--neon-red-glow);
+        }
+        
+        .presets {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+        
+        .preset {
+            background-color: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--dark-border);
+            border-radius: 10px;
+            padding: 1rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .preset:hover {
+            border-color: var(--neon-red);
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(255, 0, 60, 0.2);
+        }
+        
+        .preset.active {
+            border-color: var(--neon-red);
+            background-color: rgba(255, 0, 60, 0.1);
+            box-shadow: 0 0 15px var(--neon-red-glow);
+        }
+        
+        .preset-name {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        
+        .preset-dimensions {
+            color: var(--neon-red);
+            font-weight: 700;
+        }
+        
+        .preset-desc {
+            font-size: 0.85rem;
+            color: var(--text-gray);
+            margin-top: 0.3rem;
+        }
+        
+        /* Action Buttons */
+        .action-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+        
+        .btn-lg {
+            padding: 1rem 2.5rem;
+            font-size: 1.1rem;
+            border-radius: 10px;
+            min-width: 180px;
+        }
+        
+        .btn-secondary {
+            background-color: transparent;
+            border: 2px solid var(--text-gray);
+            color: var(--text-light);
+        }
+        
+        .btn-secondary:hover {
+            border-color: var(--neon-red);
+            color: var(--neon-red);
+        }
+        
+        /* Preview Section */
+        .preview-section {
+            background-color: var(--dark-card);
+            border-radius: 16px;
+            padding: 2.5rem;
+            margin-bottom: 3rem;
+            border: 1px solid var(--dark-border);
+            min-height: 300px;
+        }
+        
+        .preview-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 250px;
+            border-radius: 10px;
+            background-color: rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .preview-placeholder {
+            text-align: center;
+            color: var(--text-gray);
+        }
+        
+        .preview-placeholder i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: var(--neon-red);
+            display: block;
+        }
+        
+        #preview img, #preview video {
+            max-width: 100%;
+            max-height: 400px;
+            border-radius: 8px;
+        }
+        
+        /* Progress Section */
+        .progress-section {
+            display: none;
+        }
+        
+        .progress-box {
+            height: 10px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+            overflow: hidden;
+            margin-bottom: 1rem;
+        }
+        
+        #bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--neon-red), var(--neon-red-light));
+            border-radius: 5px;
+            transition: width 0.3s;
+        }
+        
+        #status {
+            font-weight: 600;
+            color: var(--neon-red);
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+        
+        /* Plans Section */
+        .plans-section {
+            margin-top: 5rem;
+        }
+        
+        .plans-section h2 {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            color: var(--neon-red);
+        }
+        
+        .plans-section > p {
+            text-align: center;
+            color: var(--text-gray);
+            max-width: 600px;
+            margin: 0 auto 3rem;
+        }
+        
+        .plans {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            margin-bottom: 5rem;
+        }
+        
+        .plan {
+            background-color: var(--dark-card);
+            border-radius: 16px;
+            padding: 2.5rem 2rem;
+            border: 2px solid var(--dark-border);
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .plan:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4);
+        }
+        
+        .plan.popular {
+            border-color: var(--neon-red);
+            box-shadow: 0 0 30px rgba(255, 0, 60, 0.2);
+        }
+        
+        .plan.popular::before {
+            content: 'MOST POPULAR';
+            position: absolute;
+            top: 0;
+            right: 0;
+            background-color: var(--neon-red);
+            color: white;
+            padding: 0.5rem 1.5rem;
+            font-size: 0.8rem;
+            font-weight: 700;
+            border-bottom-left-radius: 10px;
+        }
+        
+        .plan-header {
+            margin-bottom: 2rem;
+        }
+        
+        .plan-name {
+            font-size: 1.8rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+        }
+        
+        .plan-price {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+        }
+        
+        .plan-duration {
+            color: var(--text-gray);
+        }
+        
+        .plan-features {
+            list-style: none;
+            margin-bottom: 2rem;
+        }
+        
+        .plan-features li {
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+        }
+        
+        .plan-features li i {
+            color: var(--neon-red);
+            margin-right: 0.8rem;
+            font-size: 1.2rem;
+        }
+        
+        .plan-button {
+            width: 100%;
+            margin-top: 1rem;
+        }
+        
+        /* Footer */
+        footer {
+            background-color: rgba(0, 0, 0, 0.8);
+            padding: 3rem 5%;
+            margin-top: 5rem;
+            border-top: 1px solid var(--dark-border);
+        }
+        
+        .footer-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 3rem;
+            margin-bottom: 2rem;
+        }
+        
+        .footer-column h3 {
+            font-size: 1.3rem;
+            margin-bottom: 1.5rem;
+            color: var(--neon-red);
+        }
+        
+        .footer-column ul {
+            list-style: none;
+        }
+        
+        .footer-column ul li {
+            margin-bottom: 0.8rem;
+        }
+        
+        .footer-column ul li a {
+            color: var(--text-gray);
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+        
+        .footer-column ul li a:hover {
+            color: var(--neon-red);
+        }
+        
+        .footer-bottom {
+            text-align: center;
+            padding-top: 2rem;
+            border-top: 1px solid var(--dark-border);
+            color: var(--text-gray);
+        }
+        
+        /* Skeleton Loading */
+        .skeleton {
+            display: none;
+            width: 100%;
+        }
+        
+        .skeleton.active {
+            display: block;
+        }
+        
+        .skel-box {
+            width: 100%;
+            height: 200px;
+            background: linear-gradient(90deg, #222, #333, #222);
+            background-size: 200% 100%;
+            animation: loading 1.5s infinite;
+            border-radius: 10px;
+            margin-bottom: 1rem;
+        }
+        
+        .skel-line {
+            height: 20px;
+            background: linear-gradient(90deg, #222, #333, #222);
+            background-size: 200% 100%;
+            animation: loading 1.5s infinite;
+            border-radius: 4px;
+            margin-bottom: 0.8rem;
+        }
+        
+        .skel-line.short {
+            width: 60%;
+        }
+        
+        @keyframes loading {
+            0% {
+                background-position: -200% 0;
+            }
+            100% {
+                background-position: 200% 0;
+            }
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            .hero h1 {
+                font-size: 2.8rem;
+            }
+            
+            nav ul {
+                display: none;
+            }
+            
+            .mobile-menu-btn {
+                display: block;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            header {
+                padding: 1rem 5%;
+            }
+            
+            .hero h1 {
+                font-size: 2.2rem;
+            }
+            
+            .hero p {
+                font-size: 1rem;
+            }
+            
+            .upload-section, .controls-section, .preview-section {
+                padding: 1.5rem;
+            }
+            
+            .plans {
+                grid-template-columns: 1fr;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .btn-lg {
+                width: 100%;
+                max-width: 300px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .hero {
+                padding: 2rem 0;
+            }
+            
+            .hero h1 {
+                font-size: 1.8rem;
+            }
+            
+            .presets {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="logo">
+            <i>⚡</i>
+            <span>FastResize Pro</span>
+        </div>
+        <nav>
+            <ul>
+                <li><a href="#upload">Resizer</a></li>
+                <li><a href="#features">Features</a></li>
+                <li><a href="#plans">Plans</a></li>
+                <li><a href="#tools">Tools</a></li>
+                <li><a href="#support">Support</a></li>
+            </ul>
+        </nav>
+        <div class="auth-buttons">
+            <button class="btn btn-outline" id="loginBtn">Log In</button>
+            <button class="btn btn-primary" id="signupBtn">Sign Up Free</button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main>
+        <!-- Hero Section -->
+        <section class="hero">
+            <h1>Resize Images, Videos & Documents in Seconds</h1>
+            <p>Professional-grade media resizing for creators, businesses, and everyone in between. Process files up to 1GB with our powerful browser-based tools.</p>
+            <button class="btn btn-primary btn-lg" onclick="document.getElementById('upload').scrollIntoView({behavior: 'smooth'})">Start Resizing Now</button>
+        </section>
+
+        <!-- Upload Section -->
+        <section id="upload" class="upload-section">
+            <h2>Upload Your Files</h2>
+            <div class="upload-area" id="uploadArea">
+                <i>📁</i>
+                <h3>Drag & Drop Files Here</h3>
+                <p>or click to browse</p>
+                <input type="file" id="fileInput" multiple style="display: none;">
+                <div class="file-types">
+                    <span class="file-type">Images (JPG, PNG, WebP)</span>
+                    <span class="file-type">Videos (MP4, MOV, AVI)</span>
+                    <span class="file-type">Documents (PDF, DOC)</span>
+                    <span class="file-type">Up to 1GB</span>
+                </div>
+            </div>
+            <div id="fileList"></div>
+        </section>
+
+        <!-- Controls Section -->
+        <section class="controls-section">
+            <h2>Customize Output</h2>
+            
+            <div class="control-group">
+                <div class="control-label">
+                    <span>Quality</span>
+                    <span id="qualityValue" class="control-value">80%</span>
+                </div>
+                <input type="range" min="10" max="100" value="80" class="slider" id="quality">
+            </div>
+            
+            <div class="control-group">
+                <div class="control-label">
+                    <span>Target Size</span>
+                    <span id="sizeValue" class="control-value">5 MB</span>
+                </div>
+                <input type="range" min="0.1" max="100" value="5" step="0.1" class="slider" id="targetSize">
+            </div>
+            
+            <div class="control-group">
+                <div class="control-label">
+                    <span>Dimensions</span>
+                    <span id="dimensionsValue" class="control-value">1080 × 1080</span>
+                </div>
+                <div class="dimension-inputs" style="display: flex; gap: 1rem; margin-top: 1rem;">
+                    <input type="number" id="widthInput" value="1080" style="flex: 1; padding: 0.8rem; background: rgba(255,255,255,0.05); border: 1px solid var(--dark-border); border-radius: 8px; color: white;">
+                    <span style="align-self: center;">×</span>
+                    <input type="number" id="heightInput" value="1080" style="flex: 1; padding: 0.8rem; background: rgba(255,255,255,0.05); border: 1px solid var(--dark-border); border-radius: 8px; color: white;">
+                    <button id="lockAspect" style="padding: 0.8rem; background: var(--dark-border); border: none; border-radius: 8px; color: white; cursor: pointer;">🔒</button>
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <div class="control-label">
+                    <span>Presets for Social Media</span>
+                </div>
+                <div class="presets">
+                    <div class="preset active" data-width="1080" data-height="1080">
+                        <div class="preset-name">Instagram Post</div>
+                        <div class="preset-dimensions">1080 × 1080</div>
+                        <div class="preset-desc">Square (1:1)</div>
+                    </div>
+                    <div class="preset" data-width="1080" data-height="1920">
+                        <div class="preset-name">TikTok/Reels</div>
+                        <div class="preset-dimensions">1080 × 1920</div>
+                        <div class="preset-desc">Vertical (9:16)</div>
+                    </div>
+                    <div class="preset" data-width="1920" data-height="1080">
+                        <div class="preset-name">YouTube</div>
+                        <div class="preset-dimensions">1920 × 1080</div>
+                        <div class="preset-desc">Landscape (16:9)</div>
+                    </div>
+                    <div class="preset" data-width="1200" data-height="630">
+                        <div class="preset-name">Facebook</div>
+                        <div class="preset-dimensions">1200 × 630</div>
+                        <div class="preset-desc">Link Preview</div>
+                    </div>
+                    <div class="preset" data-width="1280" data-height="720">
+                        <div class="preset-name">HD Video</div>
+                        <div class="preset-dimensions">1280 × 720</div>
+                        <div class="preset-desc">720p HD</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="action-buttons">
+                <button class="btn btn-secondary btn-lg" id="cancelBtn" disabled>Cancel</button>
+                <button class="btn btn-primary btn-lg" id="processBtn">Process Files</button>
+                <button class="btn btn-secondary btn-lg" id="batchBtn">Batch Process</button>
+            </div>
+        </section>
+
+        <!-- Progress Section -->
+        <section class="progress-section" id="progressSection">
+            <h2>Processing Files</h2>
+            <div class="progress-box">
+                <div id="bar"></div>
+            </div>
+            <p id="status">Preparing…</p>
+            <div class="action-buttons">
+                <button class="btn btn-secondary btn-lg" id="cancelProcessBtn">Cancel Processing</button>
+            </div>
+        </section>
+
+        <!-- Preview Section -->
+        <section class="preview-section">
+            <h2>Preview</h2>
+            <div class="preview-container">
+                <div id="preview">
+                    <div class="preview-placeholder">
+                        <i>👁️</i>
+                        <p>Your processed files will appear here</p>
+                        <p style="font-size: 0.9rem; margin-top: 0.5rem;">Supported: Images, Videos, PDFs</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Skeleton Loading -->
+            <div id="skeleton" class="skeleton">
+                <div class="skel-box"></div>
+                <div class="skel-line"></div>
+                <div class="skel-line short"></div>
+            </div>
+            
+            <div class="action-buttons" id="downloadButtons" style="display: none; margin-top: 2rem;">
+                <button class="btn btn-primary btn-lg" id="downloadBtn">Download All</button>
+                <button class="btn btn-secondary btn-lg" id="clearBtn">Clear Preview</button>
+            </div>
+        </section>
+
+        <!-- Plans Section -->
+        <section id="plans" class="plans-section">
+            <h2>Choose Your Plan</h2>
+            <p>Select the perfect plan for your needs. All plans include our core resizing features.</p>
+            
+            <div class="plans">
+                <!-- Standard Plan -->
+                <div class="plan">
+                    <div class="plan-header">
+                        <div class="plan-name">Standard</div>
+                        <div class="plan-price">$0</div>
+                        <div class="plan-duration">Free Forever</div>
+                    </div>
+                    <ul class="plan-features">
+                        <li><i>✓</i> Single file processing</li>
+                        <li><i>✓</i> Up to 500MB files</li>
+                        <li><i>✓</i> Basic presets</li>
+                        <li><i>✓</i> Image & video resize</li>
+                        <li><i>✓</i> No watermarks</li>
+                        <li><i>✗</i> No batch processing</li>
+                        <li><i>✗</i> No priority processing</li>
+                    </ul>
+                    <button class="btn btn-outline plan-button">Get Started</button>
+                </div>
+                
+                <!-- Premium Plan -->
+                <div class="plan popular">
+                    <div class="plan-header">
+                        <div class="plan-name">Premium</div>
+                        <div class="plan-price">$9</div>
+                        <div class="plan-duration">per month</div>
+                    </div>
+                    <ul class="plan-features">
+                        <li><i>✓</i> Everything in Standard</li>
+                        <li><i>✓</i> Up to 1GB files</li>
+                        <li><i>✓</i> All presets unlocked</li>
+                        <li><i>✓</i> Batch processing</li>
+                        <li><i>✓</i> ZIP download</li>
+                        <li><i>✓</i> Priority processing</li>
+                        <li><i>✓</i> Cloud save settings</li>
+                    </ul>
+                    <button class="btn btn-primary plan-button">Try Free for 7 Days</button>
+                </div>
+                
+                <!-- Business Plan -->
+                <div class="plan">
+                    <div class="plan-header">
+                        <div class="plan-name">Business</div>
+                        <div class="plan-price">$49</div>
+                        <div class="plan-duration">per month</div>
+                    </div>
+                    <ul class="plan-features">
+                        <li><i>✓</i> Everything in Premium</li>
+                        <li><i>✓</i> Up to 5GB files</li>
+                        <li><i>✓</i> API access</li>
+                        <li><i>✓</i> Custom presets</li>
+                        <li><i>✓</i> Team collaboration</li>
+                        <li><i>✓</i> Dedicated support</li>
+                        <li><i>✓</i> Analytics dashboard</li>
+                    </ul>
+                    <button class="btn btn-outline plan-button">Contact Sales</button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-content">
+            <div class="footer-column">
+                <h3>FastResize Pro</h3>
+                <p>The most advanced online media resizer. Process images, videos, and documents directly in your browser.</p>
+            </div>
+            
+            <div class="footer-column">
+                <h3>Tools</h3>
+                <ul>
+                    <li><a href="/image-resizer">Image Resizer</a></li>
+                    <li><a href="/video-resizer">Video Resizer</a></li>
+                    <li><a href="/compress-image">Image Compressor</a></li>
+                    <li><a href="/compress-video">Video Compressor</a></li>
+                    <li><a href="/batch-resize">Batch Resize</a></li>
+                </ul>
+            </div>
+            
+            <div class="footer-column">
+                <h3>Social Media Sizes</h3>
+                <ul>
+                    <li><a href="/yt-size">YouTube Size</a></li>
+                    <li><a href="/ig-size">Instagram Size</a></li>
+                    <li><a href="/tt-size">TikTok Size</a></li>
+                    <li><a href="/whatsapp-size">WhatsApp Size</a></li>
+                    <li><a href="/facebook-size">Facebook Size</a></li>
+                </ul>
+            </div>
+            
+            <div class="footer-column">
+                <h3>Support</h3>
+                <ul>
+                    <li><a href="/help">Help Center</a></li>
+                    <li><a href="/faq">FAQ</a></li>
+                    <li><a href="/contact">Contact Us</a></li>
+                    <li><a href="/privacy">Privacy Policy</a></li>
+                    <li><a href="/terms">Terms of Service</a></li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="footer-bottom">
+            <p>&copy; 2023 FastResize Pro. All rights reserved. Made with ❤️ for creators worldwide.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyDasCZNfKbILLsjT84kOd3EJ6aDyF8P9QE",
+            authDomain: "looma-lab.firebaseapp.com",
+            projectId: "looma-lab",
+            storageBucket: "looma-lab.firebasestorage.app",
+            messagingSenderId: "1095082480228",
+            appId: "1:1095082480228:web:dcd4f67dbbd3777f220571",
+            measurementId: "G-Z3ZK83X2BR"
+        };
+        
+        // Initialize variables
+        let selectedFiles = [];
+        let isProcessing = false;
+        let processingCanceled = false;
+        let ffmpeg = null;
+        let currentPreset = 'instagram';
+        let aspectRatioLocked = true;
+        let originalWidth = 1080;
+        let originalHeight = 1080;
+        
+        // Initialize FFmpeg
+        async function initFFmpeg() {
+            if (!ffmpeg) {
+                const { createFFmpeg, fetchFile } = FFmpeg;
+                ffmpeg = createFFmpeg({ log: false });
+            }
+            if (!ffmpeg.isLoaded()) {
+                await ffmpeg.load();
+            }
+        }
+        
+        // DOM Elements
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const fileList = document.getElementById('fileList');
+        const qualitySlider = document.getElementById('quality');
+        const qualityValue = document.getElementById('qualityValue');
+        const targetSizeSlider = document.getElementById('targetSize');
+        const sizeValue = document.getElementById('sizeValue');
+        const widthInput = document.getElementById('widthInput');
+        const heightInput = document.getElementById('heightInput');
+        const lockAspectBtn = document.getElementById('lockAspect');
+        const dimensionsValue = document.getElementById('dimensionsValue');
+        const presets = document.querySelectorAll('.preset');
+        const processBtn = document.getElementById('processBtn');
+        const cancelBtn = document.getElementById('cancelBtn');
+        const batchBtn = document.getElementById('batchBtn');
+        const progressSection = document.getElementById('progressSection');
+        const bar = document.getElementById('bar');
+        const status = document.getElementById('status');
+        const cancelProcessBtn = document.getElementById('cancelProcessBtn');
+        const preview = document.getElementById('preview');
+        const skeleton = document.getElementById('skeleton');
+        const downloadButtons = document.getElementById('downloadButtons');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const loginBtn = document.getElementById('loginBtn');
+        const signupBtn = document.getElementById('signupBtn');
+        
+        // Event Listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            // Upload area click
+            uploadArea.addEventListener('click', () => fileInput.click());
+            
+            // File input change
+            fileInput.addEventListener('change', handleFileSelect);
+            
+            // Drag and drop
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.style.backgroundColor = 'rgba(255, 0, 60, 0.1)';
+            });
+            
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.style.backgroundColor = '';
+            });
+            
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.style.backgroundColor = '';
+                handleFileSelect({ target: { files: e.dataTransfer.files } });
+            });
+            
+            // Quality slider
+            qualitySlider.addEventListener('input', () => {
+                qualityValue.textContent = `${qualitySlider.value}%`;
+            });
+            
+            // Target size slider
+            targetSizeSlider.addEventListener('input', () => {
+                const value = parseFloat(targetSizeSlider.value);
+                sizeValue.textContent = value < 1 ? `${value * 1000} KB` : `${value} MB`;
+            });
+            
+            // Dimension inputs
+            widthInput.addEventListener('input', updateDimensions);
+            heightInput.addEventListener('input', updateDimensions);
+            
+            // Aspect ratio lock
+            lockAspectBtn.addEventListener('click', () => {
+                aspectRatioLocked = !aspectRatioLocked;
+                lockAspectBtn.textContent = aspectRatioLocked ? '🔒' : '🔓';
+                if (aspectRatioLocked) {
+                    originalWidth = parseInt(widthInput.value);
+                    originalHeight = parseInt(heightInput.value);
+                }
+            });
+            
+            // Preset selection
+            presets.forEach(preset => {
+                preset.addEventListener('click', () => {
+                    presets.forEach(p => p.classList.remove('active'));
+                    preset.classList.add('active');
+                    
+                    const width = preset.getAttribute('data-width');
+                    const height = preset.getAttribute('data-height');
+                    
+                    widthInput.value = width;
+                    heightInput.value = height;
+                    
+                    dimensionsValue.textContent = `${width} × ${height}`;
+                    
+                    // Store original dimensions for aspect ratio
+                    originalWidth = parseInt(width);
+                    originalHeight = parseInt(height);
+                });
+            });
+            
+            // Process button
+            processBtn.addEventListener('click', processFiles);
+            
+            // Cancel button
+            cancelBtn.addEventListener('click', () => {
+                selectedFiles = [];
+                fileList.innerHTML = '';
+                cancelBtn.disabled = true;
+            });
+            
+            // Batch button
+            batchBtn.addEventListener('click', () => {
+                alert('Batch processing is available in Premium and Business plans. Upgrade to process multiple files at once!');
+            });
+            
+            // Cancel process button
+            cancelProcessBtn.addEventListener('click', () => {
+                processingCanceled = true;
+                status.textContent = 'Cancelling...';
+            });
+            
+            // Download button
+            downloadBtn.addEventListener('click', downloadAllFiles);
+            
+            // Clear button
+            clearBtn.addEventListener('click', () => {
+                preview.innerHTML = `
+                    <div class="preview-placeholder">
+                        <i>👁️</i>
+                        <p>Your processed files will appear here</p>
+                        <p style="font-size: 0.9rem; margin-top: 0.5rem;">Supported: Images, Videos, PDFs</p>
+                    </div>
+                `;
+                downloadButtons.style.display = 'none';
+            });
+            
+            // Auth buttons
+            loginBtn.addEventListener('click', () => {
+                alert('Login functionality would be implemented with Firebase Auth. This is a demo.');
+            });
+            
+            signupBtn.addEventListener('click', () => {
+                alert('Signup functionality would be implemented with Firebase Auth. This is a demo.');
+            });
+            
+            // Detect internet speed
+            detectInternetSpeed();
+        });
+        
+        // Handle file selection
+        function handleFileSelect(e) {
+            const files = Array.from(e.target.files);
+            
+            if (files.length === 0) return;
+            
+            // Check file sizes (demo limitation)
+            files.forEach(file => {
+                if (file.size > 500 * 1024 * 1024) { // 500MB limit for demo
+                    alert(`File ${file.name} is too large for the demo. Max size is 500MB.`);
+                    return;
+                }
+                
+                selectedFiles.push(file);
+            });
+            
+            // Update file list
+            updateFileList();
+            
+            // Enable cancel button
+            cancelBtn.disabled = false;
+        }
+        
+        // Update file list display
+        function updateFileList() {
+            if (selectedFiles.length === 0) {
+                fileList.innerHTML = '';
+                return;
+            }
+            
+            let html = '<h3 style="margin-bottom: 1rem;">Selected Files</h3><div style="display: flex; flex-wrap: wrap; gap: 1rem;">';
+            
+            selectedFiles.forEach((file, index) => {
+                const fileType = detectFile(file);
+                const fileSize = formatFileSize(file.size);
+                
+                html += `
+                    <div style="background: rgba(255,255,255,0.05); border-radius: 10px; padding: 1rem; min-width: 200px;">
+                        <div style="display: flex; align-items: center; margin-bottom: 0.5rem;">
+                            <div style="background: var(--neon-red); color: white; width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-right: 0.8rem;">
+                                ${fileType === 'image' ? '🖼️' : fileType === 'video' ? '🎥' : '📄'}
+                            </div>
+                            <div>
+                                <div style="font-weight: 600; font-size: 0.9rem;">${file.name}</div>
+                                <div style="font-size: 0.8rem; color: var(--text-gray);">${fileSize}</div>
+                            </div>
+                        </div>
+                        <button onclick="removeFile(${index})" style="background: transparent; border: 1px solid var(--dark-border); color: var(--text-light); padding: 0.3rem 0.8rem; border-radius: 5px; font-size: 0.8rem; cursor: pointer; width: 100%;">Remove</button>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            fileList.innerHTML = html;
+        }
+        
+        // Remove file from selection
+        function removeFile(index) {
+            selectedFiles.splice(index, 1);
+            updateFileList();
+            
+            if (selectedFiles.length === 0) {
+                cancelBtn.disabled = true;
+            }
+        }
+        
+        // Detect file type
+        function detectFile(file) {
+            if (file.type.startsWith("image")) return "image";
+            if (file.type.startsWith("video")) return "video";
+            if (file.type === "application/pdf") return "document";
+            return "unsupported";
+        }
+        
+        // Format file size
+        function formatFileSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+            return (bytes / (1024 * 1024 * 1024)).toFixed(1) + ' GB';
+        }
+        
+        // Update dimensions display
+        function updateDimensions() {
+            const width = widthInput.value;
+            const height = heightInput.value;
+            
+            dimensionsValue.textContent = `${width} × ${height}`;
+            
+            // Maintain aspect ratio if locked
+            if (aspectRatioLocked && width && height) {
+                if (parseInt(width) !== originalWidth) {
+                    const ratio = originalHeight / originalWidth;
+                    heightInput.value = Math.round(width * ratio);
+                    originalWidth = parseInt(width);
+                    originalHeight = parseInt(heightInput.value);
+                } else if (parseInt(height) !== originalHeight) {
+                    const ratio = originalWidth / originalHeight;
+                    widthInput.value = Math.round(height * ratio);
+                    originalHeight = parseInt(height);
+                    originalWidth = parseInt(widthInput.value);
+                }
+            }
+        }
+        
+        // Process files
+        async function processFiles() {
+            if (selectedFiles.length === 0) {
+                alert('Please select files first!');
+                return;
+            }
+            
+            if (isProcessing) {
+                alert('Processing already in progress!');
+                return;
+            }
+            
+            isProcessing = true;
+            processingCanceled = false;
+            
+            // Show progress section
+            progressSection.style.display = 'block';
+            progressSection.scrollIntoView({ behavior: 'smooth' });
+            
+            // Show skeleton loading in preview
+            preview.innerHTML = '';
+            skeleton.classList.add('active');
+            
+            // Hide download buttons
+            downloadButtons.style.display = 'none';
+            
+            // Process each file
+            const processedFiles = [];
+            
+            for (let i = 0; i < selectedFiles.length; i++) {
+                if (processingCanceled) break;
+                
+                const file = selectedFiles[i];
+                const fileType = detectFile(file);
+                
+                // Update progress
+                const progress = Math.round((i / selectedFiles.length) * 100);
+                bar.style.width = `${progress}%`;
+                status.textContent = getProcessingMessage(i, selectedFiles.length, fileType);
+                
+                // Process based on file type
+                try {
+                    let processedFile;
+                    
+                    if (fileType === 'image') {
+                        processedFile = await resizeImage(file);
+                    } else if (fileType === 'video') {
+                        processedFile = await resizeVideo(file);
+                    } else {
+                        // For documents or unsupported, just pass through
+                        processedFile = file;
+                    }
+                    
+                    if (processedFile) {
+                        processedFiles.push({
+                            original: file,
+                            processed: processedFile,
+                            type: fileType
+                        });
+                        
+                        // Show preview for first file
+                        if (i === 0) {
+                            showPreview(processedFile, fileType);
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error processing file:', error);
+                    status.textContent = `Error processing ${file.name}`;
+                }
+                
+                // Simulate processing time
+                await sleep(500);
+            }
+            
+            // Complete processing
+            if (processingCanceled) {
+                status.textContent = 'Processing cancelled';
+                bar.style.width = '0%';
+            } else {
+                bar.style.width = '100%';
+                status.textContent = 'Processing complete!';
+                
+                // Show download buttons
+                downloadButtons.style.display = 'flex';
+                
+                // Hide skeleton
+                skeleton.classList.remove('active');
+            }
+            
+            isProcessing = false;
+            
+            // Hide progress section after delay
+            setTimeout(() => {
+                progressSection.style.display = 'none';
+                bar.style.width = '0%';
+            }, 3000);
+        }
+        
+        // Resize image function
+        async function resizeImage(file) {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.src = URL.createObjectURL(file);
+                
+                img.onload = () => {
+                    const width = parseInt(widthInput.value);
+                    const height = parseInt(heightInput.value);
+                    const quality = parseInt(qualitySlider.value) / 100;
+                    
+                    const canvas = document.createElement("canvas");
+                    canvas.width = width;
+                    canvas.height = height;
+                    
+                    const ctx = canvas.getContext("2d");
+                    ctx.drawImage(img, 0, 0, width, height);
+                    
+                    const siteName = "FastResize";
+                    const ext = file.name.split(".").pop();
+                    const newName = `${siteName}_image_${width}x${height}_${file.name}`;
+                    
+                    canvas.toBlob(blob => {
+                        const resizedFile = new File([blob], newName, { type: file.type });
+                        resolve(resizedFile);
+                    }, file.type, quality);
+                };
+            });
+        }
+        
+        // Resize video function
+        async function resizeVideo(file) {
+            try {
+                await initFFmpeg();
+                
+                const width = parseInt(widthInput.value);
+                const height = parseInt(heightInput.value);
+                const quality = parseInt(qualitySlider.value) / 100;
+                
+                // Write file to FFmpeg FS
+                ffmpeg.FS("writeFile", "input.mp4", await fetchFile(file));
+                
+                // Run FFmpeg command
+                await ffmpeg.run(
+                    "-i", "input.mp4",
+                    "-vf", `scale=${width}:${height}`,
+                    "-b:v", `${Math.floor(quality * 3000)}k`,
+                    "output.mp4"
+                );
+                
+                // Read output file
+                const data = ffmpeg.FS("readFile", "output.mp4");
+                
+                // Create new file
+                const siteName = "FastResize";
+                const newName = `${siteName}_video_${width}x${height}_${file.name}`;
+                
+                const blob = new Blob([data.buffer], { type: "video/mp4" });
+                const resizedFile = new File([blob], newName, { type: "video/mp4" });
+                
+                return resizedFile;
+            } catch (error) {
+                console.error('Error resizing video:', error);
+                // Fallback: return original file
+                return file;
+            }
+        }
+        
+        // Show preview
+        function showPreview(file, type) {
+            preview.innerHTML = '';
+            
+            if (type === 'image') {
+                const img = document.createElement('img');
+                img.src = URL.createObjectURL(file);
+                img.alt = 'Processed Image';
+                img.style.maxWidth = '100%';
+                img.style.borderRadius = '8px';
+                preview.appendChild(img);
+            } else if (type === 'video') {
+                const video = document.createElement('video');
+                video.src = URL.createObjectURL(file);
+                video.controls = true;
+                video.style.maxWidth = '100%';
+                video.style.borderRadius = '8px';
+                preview.appendChild(video);
+            } else {
+                const div = document.createElement('div');
+                div.className = 'preview-placeholder';
+                div.innerHTML = `
+                    <i>📄</i>
+                    <p>Document processed: ${file.name}</p>
+                    <p style="font-size: 0.9rem; margin-top: 0.5rem;">Download available</p>
+                `;
+                preview.appendChild(div);
+            }
+        }
+        
+        // Download all files
+        async function downloadAllFiles() {
+            if (selectedFiles.length === 0) return;
+            
+            if (selectedFiles.length === 1) {
+                // Single file download
+                const file = selectedFiles[0];
+                const fileType = detectFile(file);
+                
+                if (fileType === 'image') {
+                    const processedFile = await resizeImage(file);
+                    downloadFile(processedFile);
+                } else if (fileType === 'video') {
+                    const processedFile = await resizeVideo(file);
+                    downloadFile(processedFile);
+                } else {
+                    downloadFile(file);
+                }
+            } else {
+                // Multiple files - use ZIP (demo)
+                alert('Batch download with ZIP is available in Premium and Business plans. Upgrade to download multiple files at once!');
+            }
+        }
+        
+        // Download file
+        function downloadFile(file) {
+            const url = URL.createObjectURL(file);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = file.name;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+        
+        // Get processing message
+        function getProcessingMessage(index, total, type) {
+            const messages = [
+                "Optimizing quality…",
+                "Adjusting resolution…",
+                "Applying compression…",
+                "Finalizing export…",
+                "Processing " + (type === 'image' ? 'image' : 'video') + "…"
+            ];
+            
+            return messages[index % messages.length];
+        }
+        
+        // Detect internet speed
+        function detectInternetSpeed() {
+            const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+            
+            if (connection) {
+                let speedFactor = 1;
+                
+                if (connection.downlink < 1.5) {
+                    speedFactor = 0.6;
+                    console.log('Slow connection detected. Adjusting animations.');
+                } else if (connection.downlink > 5) {
+                    speedFactor = 1.2;
+                    console.log('Fast connection detected.');
+                }
+                
+                // Apply speed factor to animations if needed
+                document.documentElement.style.setProperty('--animation-speed', `${speedFactor}s`);
+            }
+        }
+        
+        // Utility functions
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+        
+        function fetchFile(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(new Uint8Array(e.target.result));
+                reader.onerror = reject;
+                reader.readAsArrayBuffer(file);
+            });
+        }
+        
+        // Auto quality based on file size
+        function autoQuality(sizeMB) {
+            if (sizeMB > 100) return 0.5;
+            if (sizeMB > 50) return 0.7;
+            return 0.85;
+        }
+    </script>
+</body>
+</html>
