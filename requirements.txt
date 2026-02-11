@@ -1,3 +1,9 @@
 flask
-pillow
+flask_sqlalchemy
+flask_login
+flask_mail
+werkzeug
+numpy
+scikit-learn
+joblib
 gunicorn
